@@ -4,6 +4,12 @@ from tavily.asynclient import aiohttp
 
 @tool
 async def read_url_tool(url: str) -> str:
+    """
+    Read and extract the text content from a specific URL.
+    Use this when you have a specific link from a search result
+    and need to read the full webpage detail.
+    """
+
     print(f"Reading Webpage: {url}...")
 
     jina_url = f"https://r.jina.ai/{url}"

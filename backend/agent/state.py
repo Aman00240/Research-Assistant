@@ -10,4 +10,5 @@ class AgentState(TypedDict):
     completed_steps: Annotated[
         list[str], operator.add
     ]  # Tracks what the Worker has finishe
+    research_notes: Annotated[list[str], operator.add]
     final_draft: str  # The document the Critic will review

@@ -23,6 +23,7 @@ async def start_research(request: ResearchRequest, background_tasks: BackgroundT
         "messages": [("user", f"Research this topic: {request.topic}")],
         "plan": [],
         "completed_steps": [],
+        "research_notes": [],
         "final_draft": "",
     }
     background_tasks.add_task(graph.ainvoke, initial_state, config, version="v2")
@@ -52,4 +53,5 @@ async def get_status(thread_id: str):
         "completed_steps": completed,
         "progress": f"{len(completed)}/{len(plan)}" if plan else "0/0",
         "final_draft": final_draft,
+        "history": values.get("messages", []),
     }

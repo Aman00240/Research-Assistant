@@ -1,16 +1,25 @@
 [project]
 name = "research-assistant"
 version = "0.1.0"
-description = "Add your description here"
+description = "Agentic Research Pipeline"
 readme = "README.md"
 requires-python = ">=3.13"
+
 dependencies = [
-    "dotenv>=0.9.9",
+    "python-dotenv>=1.0.0",
+]
+
+[dependency-groups]
+backend = [
     "fastapi>=0.136.1",
     "langchain-groq>=1.1.2",
     "langgraph>=1.1.10",
     "pydantic-settings>=2.14.0",
-    "streamlit>=1.57.0",
     "tavily>=1.1.0",
     "uvicorn>=0.46.0",
+]
+
+frontend = [
+    "streamlit>=1.57.0",
+    "requests>=2.31.0",
 ]
