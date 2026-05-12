@@ -11,7 +11,10 @@ dependencies = [
 
 [dependency-groups]
 backend = [
+    "faiss-cpu>=1.13.2",
     "fastapi>=0.136.1",
+    "fastembed>=0.8.0",
+    "langchain-community>=0.4.1",
     "langchain-groq>=1.1.2",
     "langgraph>=1.1.10",
     "pydantic-settings>=2.14.0",

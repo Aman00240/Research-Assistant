@@ -6,8 +6,8 @@ services:
         container_name: research_backend
         command:
             [
-                "uv",
-                "run",
+                "/app/.venv/bin/python",
+                "-m",
                 "uvicorn",
                 "backend.main:app",
                 "--host",
@@ -20,6 +20,7 @@ services:
             - "8000:8000"
         volumes:
             - .:/app
+            - /app/.venv
         env_file:
             - .env
 
@@ -32,6 +33,7 @@ services:
             - "8501:8501"
         volumes:
             - .:/app
+            - /app/.venv
         environment:
             - BACKEND_URL=http://backend:8000
         depends_on:

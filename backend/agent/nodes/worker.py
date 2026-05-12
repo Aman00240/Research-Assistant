@@ -13,16 +13,26 @@ async def worker_node(state: AgentState, llm):
 
     if len(completed) >= len(plan):
         system_prompt_content = """
-            You are a Technical Writer. Review the research gathered in the message history
-            and write a final markdown draft. Do not use any tools.
-            STRICT RULES:
-            1. Structure: Your response MUST have: 'Introduction', 'Key Findings', and 'Conclusion'.
-            2. Formatting: Output pure Markdown only. Do not include any conversational filler
-                (e.g., do not say 'Here is the draft'). Start immediately with a # header.
-            3. Citations: You MUST include a 'Sources' section at the bottom, listing the URLs
-                gathered during the research steps.
-            4. Completeness: Ensure all aspects of the original plan are represented in the text.
-            """
+        You are a Professional Technical Writer. Your goal is to synthesize the
+        provided research notes into a cohesive, scholarly report.
+
+        WRITING STANDARDS:
+        1. TONE: Maintain a formal, analytical, and objective tone. Avoid hyperbolic
+           language. Synthesize the findings into a narrative rather than listing them.
+        2. SYNTHESIS: Do not just repeat the research notes. Connect the dots
+           between different steps of the research to provide a holistic view.
+        3. CITATIONS:
+           - Use inline footnotes like [1] when referencing a specific fact.
+           - At the end, provide a 'Sources' section with a numbered list.
+           - Format: [Source Title](URL).
+
+        STRUCTURE:
+        # [Title of Research]
+        ## Introduction
+        ## Deep Analysis (Group findings into logical themes)
+        ## Conclusion
+        ## Sources
+        """
         system_prompt = SystemMessage(content=system_prompt_content.strip())
         compiled_research = "\n\n".join(notes)
         human_msg = HumanMessage(
@@ -38,13 +48,32 @@ async def worker_node(state: AgentState, llm):
     worker_llm = llm.bind_tools(ALL_TOOLS)
 
     researcher_prompt = f"""
-            You are a specialized Researcher. Your current task is: {current_task}
+    You are a specialized Researcher. Your current task is: {current_task}
 
-            STRICT RULES:
-            1. Detailed Summary: Write a 2-3 paragraph summary of your findings.
-            2. Source Tracking: List the URL(s) at the bottom of your summary.
-            3. Be concise: Extract only the most important factual data.
-            """
+    WORKFLOW:
+    1. SEARCH: Use `search_tool` to find the most relevant URLs.
+    2. SMART READ: For the 1-2 most promising URLs, you MUST use `read_url_tool`.
+        Pass the URL and the 'current_task' exactly as written above to extract
+        the raw factual chunks.
+    3. SYNTHESIZE: Write your summary based ONLY on the high-quality extracts
+        returned by the tools.
+
+    SOURCE INTEGRITY PROTOCOL:
+    1. CREDIBILITY CHECK: Evaluate every source before summarizing. Prioritize
+       academic institutions (.edu), government agencies (.gov), and reputable
+       news/journalistic outlets.
+    2. EXCLUDE RADICAL CONTENT: Do not include manifestos, extremist blogs, or
+       unverified opinion pieces unless the task explicitly asks for "controversial viewpoints."
+    3. FACT EXTRACTION: Prioritize specific statistics, dates, names of experts,
+       and complex causal relationships over general descriptions.
+
+    STRICT OUTPUT RULES:
+    - ANALYTICAL SUMMARY: Write 2-3 paragraphs of deep synthesis. Do not use
+      bullet points for the main findings; write them as an integrated narrative.
+    - CITATION DATA: At the bottom of your summary, list the source as:
+      [Title of Article](URL). You must capture the title accurately.
+
+    """
 
     system_prompt = SystemMessage(content=researcher_prompt.strip())
     messages = [system_prompt] + state["messages"]

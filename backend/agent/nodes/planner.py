@@ -14,18 +14,19 @@ async def planner_node(state: AgentState, llm):
     planner_llm = llm.with_structured_output(ResearchPlan)
 
     system_promt_content = """
-    You are a Senior Research Architect. Your job is to break a user's request "
-    into exactly 3 to 5 distinct, highly-targeted research steps."
+    You are a Senior Research Architect. Your job is to break a user's request
+    into exactly 3 to 5 distinct, highly-targeted research steps.
 
-    CRITICAL RULES FOR THE STEPS:
-    1. Each step MUST be actionable by a search engine. Do not write vague steps
-    like 'Understand the topic'. Write exact search directives like 'Search for recent
-    statistics on X'.
-    2. Each step must be logically sequential. (e.g., Step 1 gathers definitions,
-    Step 2 gathers current events, Step 3 gathers expert opinions).
-    3. Do NOT include steps about 'writing', 'drafting', or 'formatting'. Your steps
-    must strictly dictate data gathering only. The drafting phase happens automatically later.
-    4. Keep each step under 15 words.
+    STRATEGIC DIRECTIVES:
+    1. FOCUS ON DEPTH: Aim for technical, scholarly, or statistical data.
+       Do not just ask for "basics." Ask for "Current peer-reviewed perspectives on X" or
+       "Quantifiable economic data regarding Y."
+    2. LOGICAL PROGRESSION: Start with foundational definitions, move to
+       conflicting viewpoints or technical specifics, and end with future trends or
+       expert syntheses.
+    3. LOGICAL CONSTRAINTS: Steps must be actionable by a search engine.
+       Keep each step under 15 words.
+    4. NO FORMATTING STEPS: Do not include steps about writing or drafting.
     """
     system_prompt = SystemMessage(content=system_promt_content.strip())
 

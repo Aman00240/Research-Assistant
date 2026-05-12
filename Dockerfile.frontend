@@ -12,4 +12,4 @@ COPY frontend/ ./frontend/
 
 EXPOSE 8501
 
-CMD ["uv", "run", "streamlit", "run", "frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["/app/.venv/bin/python", "-m", "streamlit", "run", "frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
