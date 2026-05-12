@@ -35,11 +35,15 @@ async def worker_node(state: AgentState, llm):
         """
         system_prompt = SystemMessage(content=system_prompt_content.strip())
         compiled_research = "\n\n".join(notes)
-        human_msg = HumanMessage(
-            content=f"Here is the gathered research:{compiled_research}"
+        research_msg = HumanMessage(
+            content=f"Here is the gathered research:\n{compiled_research}"
         )
 
-        response = await llm.ainvoke([system_prompt, human_msg])
+        messages_to_send = [system_prompt, research_msg] + state.get("messages", [])
+
+        print("--- WRITER: Drafting report (Checking Critic feedback if any) ---")
+        response = await llm.ainvoke(messages_to_send)
+
         return {"final_draft": response.content}
 
     current_step_index = len(completed)
@@ -68,10 +72,14 @@ async def worker_node(state: AgentState, llm):
        and complex causal relationships over general descriptions.
 
     STRICT OUTPUT RULES:
+    - You must provide the summary as PLAIN TEXT.
+    - DO NOT attempt to call any tools or use JSON in your summary.
+    - DO NOT include any trailing punctuation like closing brackets or JSON syntax at the end of your message.
     - ANALYTICAL SUMMARY: Write 2-3 paragraphs of deep synthesis. Do not use
       bullet points for the main findings; write them as an integrated narrative.
     - CITATION DATA: At the bottom of your summary, list the source as:
-      [Title of Article](URL). You must capture the title accurately.
+        Source: Title of Article - URL
+        (Do not use brackets or parentheses for the URL to avoid tool-calling errors).
 
     """
 

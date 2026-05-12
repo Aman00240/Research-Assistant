@@ -30,7 +30,16 @@ async def read_url_tool(url: str, current_task: str) -> str:
                 )
                 chunks = text_splitter.split_text(full_content)
 
-                vectorstore = FAISS.from_texts(chunks, embeddings)
+                if not chunks:
+                    return f"Error: No readable text found at {url}"
+
+                vectorstore = FAISS.from_texts([chunks[0]], embeddings)
+
+                batch_size = 30
+
+                for i in range(1, len(chunks), batch_size):
+                    batch = chunks[i : i + batch_size]
+                    vectorstore.add_texts(batch)
 
                 relevant_chunks = vectorstore.similarity_search(current_task, k=5)
 
