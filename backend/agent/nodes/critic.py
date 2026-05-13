@@ -18,9 +18,9 @@ async def critic_node(state: AgentState, llm):
     Final Draft: {draft}
 
     EVALUATION CRITERIA:
-    1. ACCURACY & DEPTH: Does the draft reflect the facts in the notes? mark as FAILED if it
-        is a shallow summary. It must include specific statistics, technical
-        nuances, and an academic, analytical tone.
+    1. NO CONVERSATIONAL FILLER:
+        - The draft MUST start directly with a # Title.
+        - Mark as FAILED if there is any "Here is the report" or "Based on your request" chatter.
     2. SOURCE INTEGRITY: Check every URL. Mark as FAILED if it uses manifestos, extremist blogs,
         or unverified opinion pieces. Sources must be neutral and credible (.edu, .gov, or reputable news).
     3. FORMATTING & CITATIONS:
@@ -28,13 +28,21 @@ async def critic_node(state: AgentState, llm):
         - The 'Sources' section must use the format: [Article Title](URL).
         - NO CONVERSATIONAL FILLER. If the draft starts with "Here is your report" or
             includes any introductory chatter, mark as FAILED. It must start with a # header.
-    4. COMPLETENESS: Does the draft address every single step in the Plan?
+    4. COMPLETENESS:
+          Does the draft address every single step in the Plan?
+    5. QUANTITATIVE DEPTH:
+        - Mark as FAILED if any sub-section in 'Findings & Analysis' contains fewer than 3 full paragraphs.
+        - Mark as FAILED if the total length of the 'Findings & Analysis' section feels like a summary rather
+            than an exhaustive technical analysis.
+    6. DATA DENSITY:
+        - Check for 'Raw Data Utilization'. Every specific number, percentage, and technical term (e.g., specific chemical compounds or voltage figures) found in the Raw Notes MUST appear in the Draft.
+        - Mark as FAILED if the draft uses vague language like "significant improvement" instead of the exact figures found in the notes.
 
     OUTPUT RULES:
     - If ALL criteria are met perfectly, output exactly: APPROVED
-    - If ANY criterion fails, output a precise 1-2 sentence directive explaining exactly
-        what the Worker must change (e.g., "Failed. Remove conversational filler and add
-        statistics from Step 2.").
+    - If ANY criterion fails, output a precise directive for the Worker.
+          Example: "FAILED. Section 2 is too short; expand it into 3 paragraphs using the
+          technical data regarding [X] from the notes. Remove the introductory filler."
     """
     system_prompt = SystemMessage(content=system_prompt_content.strip())
 

@@ -1,4 +1,3 @@
-from langchain_core.tools.simple import Tool
 from langchain_groq import ChatGroq
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
@@ -12,7 +11,19 @@ from backend.agent.state import AgentState
 from backend.agent.tools import ALL_TOOLS
 from backend.config import settings
 
-llm = ChatGroq(model=settings.model, api_key=settings.groq_key)
+researcher_llm = ChatGroq(
+    api_key=settings.groq_key,
+    model=settings.model,
+    temperature=0,
+    max_tokens=1500,
+)
+
+writer_llm = ChatGroq(
+    api_key=settings.groq_key,
+    model=settings.model,
+    temperature=0,
+    max_tokens=8000,
+)
 
 
 def route_worker(state: AgentState):
@@ -42,9 +53,11 @@ def route_critic(state: AgentState):
 
 
 builder = StateGraph(AgentState)
-builder.add_node("planner", partial(planner_node, llm=llm))
-builder.add_node("worker", partial(worker_node, llm=llm))
-builder.add_node("critic", partial(critic_node, llm=llm))
+builder.add_node("planner", partial(planner_node, llm=researcher_llm))
+builder.add_node(
+    "worker", partial(worker_node, llm=researcher_llm, writer_llm=writer_llm)
+)
+builder.add_node("critic", partial(critic_node, llm=researcher_llm))
 builder.add_node("tools", ToolNode(ALL_TOOLS))
 
 builder.add_edge(START, "planner")

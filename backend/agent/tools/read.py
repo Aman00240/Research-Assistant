@@ -43,6 +43,9 @@ async def read_url_tool(url: str, current_task: str) -> str:
 
                 relevant_chunks = vectorstore.similarity_search(current_task, k=5)
 
+                if not relevant_chunks:
+                    return f"Error: Could not find any information relevant to '{current_task}' on this page."
+
                 summary_context = "\n\n".join(
                     [chunk.page_content for chunk in relevant_chunks]
                 )

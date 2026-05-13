@@ -5,8 +5,11 @@ from backend.agent.state import AgentState
 
 
 class ResearchPlan(BaseModel):
+    thinking: str = Field(
+        description="A brief technical analysis of the topic's complexity and why these specific steps are necessary."
+    )
     steps: list[str] = Field(
-        description="A list of 3-5 technical steps to research the topic"
+        description="A list of 3-5 technical steps to research the topic. Use 5 steps for complex legal/technical queries."
     )
 
 
@@ -34,4 +37,9 @@ async def planner_node(state: AgentState, llm):
 
     response = await planner_llm.ainvoke(messages)
 
-    return {"plan": response.steps}
+    plan_steps = response.steps
+    justification = response.thinking
+
+    print(f"\n--- PLANNER JUSTIFICATION ---\n{justification}\n")
+
+    return {"plan": plan_steps, "plan_justification": justification}

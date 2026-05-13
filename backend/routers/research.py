@@ -22,6 +22,7 @@ async def start_research(request: ResearchRequest, background_tasks: BackgroundT
     initial_state: AgentState = {
         "messages": [("user", f"Research this topic: {request.topic}")],
         "plan": [],
+        "plan_justification": "",
         "completed_steps": [],
         "research_notes": [],
         "final_draft": "",

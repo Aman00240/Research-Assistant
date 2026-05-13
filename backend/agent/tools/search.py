@@ -16,10 +16,21 @@ async def search_tool(query: str) -> str:
 
     print(f"Searching the web for {query}...")
 
-    response = await tavily.search(query=query, search_depth="basic")
+    try:
+        response = await tavily.search(query=query, search_depth="basic")
+        results = response.get("results", [])
 
-    content = "\n".join(
-        [f"- {res['content']} (Source: {res['url']})" for res in response["results"]]
-    )
+        if not results:
+            return f"No results found for the exact query: '{query}'. Try a broader or simpler search term."
 
-    return content
+        content = "\n".join(
+            [f"- {res['content']} (Source: {res['url']})" for res in results]
+        )
+
+        if not content.strip():
+            return "Search completed, but the results contained no readable text."
+
+        return content
+
+    except Exception as e:
+        return f"Search engine error: {str(e)}. Try a different query."
