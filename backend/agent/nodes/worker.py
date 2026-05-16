@@ -23,35 +23,15 @@ async def worker_node(state: AgentState, llm, writer_llm=None):
         4. Every factual claim must be followed by a citation
 
         WRITING STANDARDS:
-        2. TONE: Maintain a formal, analytical, and objective tone.
-        3. STRUCTURAL VOLUME: Each sub-section MUST consist of at least 3-4 dense paragraphs. Avoid brief summaries; aim for exhaustive analysis.
-        4. RAW DATA UTILIZATION: Every metric, unit, percentage, date, and proper noun found in the research
-            notes MUST be integrated into the narrative. Never use vague adjectives (e.g., "fast")
-            when a specific value (e.g., "10ms latency") is available in the data.
-        5. COMPARATIVE SYNTHESIS: Identify the primary competing entities, theories, or technologies in
-            the notes and dedicate a section to a 'Comparative Delta' analysis. Use data-heavy
-            comparisons to highlight differences.
-        6. COHESIVE INTEGRATION: Do not treat research steps as isolated entries. Use transitional logical
-            flow to connect the findings from Step 1 to the implications found in the subsequent steps.
-        7. TECHNICAL DEFINITION: For every major technical concept or acronym introduced,
-            provide a brief, high-level context or definition based on the research data to ensure technical depth.
-
-        REPORT STRUCTURE:
-        # [Title of Research]
-
-        ## Introduction
-        (Briefly state the research goal and current industry context).
-
-        ## Findings & Analysis
-        (create 3-4 logical sub-headers based on the research topics, e.g., '### Energy Density Milestones'
-        or '### Production Timelines'). Provide depth and specific numbers.
-
-        ## Conclusion
-        (Summarize the outlook and key takeaways).
-
-        ## Sources
-        (numbered list of all URLs used in the format: * [Source Title](URL))
+        1. TONE: Informative, clear, and concise.
+        2. LENGTH: The entire brief should be around 200-300 words. Do NOT write a massive scholarly report.
+        3. STRUCTURE:
+            - # [Title of Summary]
+            - 2 to 3 short paragraphs summarizing the key findings. Do not use complex sub-headers.
+            - ## Sources
+                (Numbered list of ONLY the URLs explicitly provided to you: * [Source Title](URL))
         """
+
         context_blocks = []
         all_sources = []
 
@@ -94,13 +74,11 @@ async def worker_node(state: AgentState, llm, writer_llm=None):
     PHASE 1: GATHERING (Mandatory)
         1. Use `search_tool` to find URLs.
         2. Use `read_url_tool` on the most promising URL to get raw facts.
-        - CRITICAL: You are strictly forbidden from writing your final summary until you have
-            successfully used `read_url_tool` at least once. Search snippets are not enough.
-        - If you have not used `read_url_tool` yet, you ARE NOT ALLOWED to synthesize a summary.
+        - CRITICAL: You are strictly forbidden from writing your final summary until you have successfully used `read_url_tool` at least once.
 
     PHASE 2: SYNTHESIS (Only after gathering)
-        - Write a deep-dive summary (at least 500 words) based ONLY on the high-quality extracts.
-        - Include every statistic, date, name of expert, and technical value found in the extracts.
+        - Write a concise summary (maximum 150 words) based ONLY on the high-quality extracts.
+        - Include the 2 or 3 most important statistics, dates, or names. Do not overcomplicate it.
         - Format as PLAIN TEXT. Do not attempt to call tools or use JSON in this phase.
 
     SOURCE INTEGRITY PROTOCOL:
@@ -116,8 +94,6 @@ async def worker_node(state: AgentState, llm, writer_llm=None):
     - You must provide the summary as PLAIN TEXT.
     - DO NOT attempt to call any tools or use JSON in your summary.
     - DO NOT include any trailing punctuation like closing brackets or JSON syntax at the end of your message.
-    - ANALYTICAL SUMMARY: Write 2-3 paragraphs of deep synthesis. Do not use
-      bullet points for the main findings; write them as an integrated narrative.
     - CITATION DATA: At the bottom of your summary, list the source as:
         Source: Title of Article - URL
         (Do not use brackets or parentheses for the URL to avoid tool-calling errors).
@@ -165,13 +141,16 @@ async def worker_node(state: AgentState, llm, writer_llm=None):
 
         synthesis_prompt = [
             SystemMessage(
-                content="Convert the provided research context into the SourceVerifiedNote JSON schema. Do not write any conversational text."
+                content="Convert the provided research context into the SourceVerifiedNote JSON schema. Do not write any conversational text.\n\n"
+                "CRITICAL SCHEMA RULE:\n"
+                "The 'sources' array MUST be a flat list of strings. DO NOT wrap the strings in objects.\n"
+                'CORRECT: ["https://linuxfoundation.eu/newsroom/ai-act-explainer"]\n'
+                'WRONG: [{"type": "string", "value": "https://linuxfoundation.eu/newsroom/ai-act-explainer"}]'
             ),
             HumanMessage(
                 content=f"Context to format:\n{research_context}\n\nFinal Output to extract from:\n{response.content}"
             ),
         ]
-
         structured_response = await safe_ainvoke(structured_llm, synthesis_prompt)
         print(
             f"Step {current_step_index + 1} summarized with {len(structured_response.sources)} sources."
