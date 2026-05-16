@@ -1962,6 +1962,7 @@ backend = [
     { name = "langgraph" },
     { name = "pydantic-settings" },
     { name = "tavily" },
+    { name = "tenacity" },
     { name = "uvicorn" },
 ]
 frontend = [
@@ -1983,6 +1984,7 @@ backend = [
     { name = "langgraph", specifier = ">=1.1.10" },
     { name = "pydantic-settings", specifier = ">=2.14.0" },
     { name = "tavily", specifier = ">=1.1.0" },
+    { name = "tenacity", specifier = ">=9.1.4" },
     { name = "uvicorn", specifier = ">=0.46.0" },
 ]
 frontend = [

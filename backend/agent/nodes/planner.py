@@ -1,16 +1,7 @@
 from langchain_core.messages import SystemMessage
-from pydantic import BaseModel, Field
 
-from backend.agent.state import AgentState
-
-
-class ResearchPlan(BaseModel):
-    thinking: str = Field(
-        description="A brief technical analysis of the topic's complexity and why these specific steps are necessary."
-    )
-    steps: list[str] = Field(
-        description="A list of 3-5 technical steps to research the topic. Use 5 steps for complex legal/technical queries."
-    )
+from backend.agent.state import AgentState, ResearchPlan
+from backend.agent.utils import safe_ainvoke
 
 
 async def planner_node(state: AgentState, llm):
@@ -35,7 +26,7 @@ async def planner_node(state: AgentState, llm):
 
     messages = [system_prompt] + state["messages"]
 
-    response = await planner_llm.ainvoke(messages)
+    response = await safe_ainvoke(planner_llm, messages)
 
     plan_steps = response.steps
     justification = response.thinking

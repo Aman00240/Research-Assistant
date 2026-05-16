@@ -1,6 +1,7 @@
 from langchain_core.messages import SystemMessage
 
 from backend.agent.state import AgentState
+from backend.agent.utils import safe_ainvoke
 
 
 async def critic_node(state: AgentState, llm):
@@ -46,6 +47,6 @@ async def critic_node(state: AgentState, llm):
     """
     system_prompt = SystemMessage(content=system_prompt_content.strip())
 
-    response = await llm.ainvoke([system_prompt])
+    response = await safe_ainvoke(llm, [system_prompt])
 
     return {"messages": [response]}

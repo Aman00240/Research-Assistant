@@ -13,16 +13,16 @@ from backend.config import settings
 
 researcher_llm = ChatGroq(
     api_key=settings.groq_key,
-    model=settings.model,
+    model=settings.llama_scout,
     temperature=0,
     max_tokens=1500,
 )
 
 writer_llm = ChatGroq(
     api_key=settings.groq_key,
-    model=settings.model,
+    model=settings.llama_versatile,
     temperature=0,
-    max_tokens=8000,
+    max_tokens=7000,
 )
 
 

@@ -2,8 +2,9 @@ from langchain_core.messages import SystemMessage
 from langchain_core.messages.human import HumanMessage
 from langgraph.graph.message import RemoveMessage
 
-from backend.agent.state import AgentState
+from backend.agent.state import AgentState, SourceVerifiedNote
 from backend.agent.tools import ALL_TOOLS
+from backend.agent.utils import safe_ainvoke
 
 
 async def worker_node(state: AgentState, llm, writer_llm=None):
@@ -13,8 +14,7 @@ async def worker_node(state: AgentState, llm, writer_llm=None):
 
     if len(completed) >= len(plan):
         system_prompt_content = """
-        You are a Professional Technical Writer.Synthesize the
-        provided research notes into a 1,500+ word deep-dive cohesive and scholarly report
+        You are an Executive Intelligence Analyst. Synthesize the provided research notes into a concise, data-driven Research Brief.
 
         STRICT CITATION RULES:
         1. Only use numerical citations [1], [2], etc., that correspond to the sources provided.
@@ -52,18 +52,33 @@ async def worker_node(state: AgentState, llm, writer_llm=None):
         ## Sources
         (numbered list of all URLs used in the format: * [Source Title](URL))
         """
+        context_blocks = []
+        all_sources = []
+
+        for i, note in enumerate(notes):
+            context_blocks.append(f"SECTION {i + 1} DATA:\n{note.summary_narrative}")
+            all_sources.extend(note.sources)
+
+        unique_sources = sorted(list(set([s for s in all_sources if s.strip()])))
+        source_reference_block = "\n".join(
+            [f"[{i + 1}] {url}" for i, url in enumerate(unique_sources)]
+        )
+
         system_prompt = SystemMessage(content=system_prompt_content.strip())
-        compiled_research = "\n\n".join(notes)
         research_msg = HumanMessage(
-            content=f"ACTUAL RESEARCH DATA:\n{compiled_research}\n\n"
-            f"Instruction: Use ONLY the data above. Do not hallucinate extra sources."
+            content=f"STRICT RESEARCH DATA TO USE:\n{chr(10).join(context_blocks)}\n\n"
+            f"STRICT SOURCE LIST (YOU CAN ONLY USE THESE EXACT LINKS. DO NOT INVENT URLS):\n{source_reference_block}\n\n"
+            f"INSTRUCTION:\n"
+            f"1. Write the Research Brief.\n"
+            f"2. Cite data using the corresponding bracketed number (e.g., [1]).\n"
+            f"3. The 'Sources' section MUST exactly match the STRICT SOURCE LIST above."
         )
 
         messages_to_send = [system_prompt, research_msg] + state.get("messages", [])
 
         print("--- WRITER: Drafting report (Checking Critic feedback if any) ---")
         if writer_llm is not None:
-            response = await writer_llm.ainvoke(messages_to_send)
+            response = await safe_ainvoke(writer_llm, messages_to_send)
 
             return {"final_draft": response.content}
 
@@ -128,11 +143,39 @@ async def worker_node(state: AgentState, llm, writer_llm=None):
         sanitized_messages.append(msg)
 
     print(f"--- WORKER: Asking LLM to research Step {current_step_index + 1} ---")
-    response = await worker_llm.ainvoke(sanitized_messages)
+    response = await safe_ainvoke(worker_llm, sanitized_messages)
+
+    if hasattr(response, "usage_metadata") and response.usage_metadata:
+        usage = response.usage_metadata
+        print(
+            f"TOKENS USED | Input: {usage.get('input_tokens', 0)} | Output: {usage.get('output_tokens', 0)} | Total: {usage.get('total_tokens', 0)}"
+        )
 
     if not response.tool_calls:
         print("--- WORKER: Step Complete Wiping memory and saving notes. ---")
-        summary = response.content
+        structured_llm = llm.with_structured_output(SourceVerifiedNote)
+
+        research_context = "\n\n".join(
+            [
+                m.content
+                for m in sanitized_messages
+                if isinstance(m, HumanMessage) or hasattr(m, "tool_outputs")
+            ]  # type: ignore
+        )
+
+        synthesis_prompt = [
+            SystemMessage(
+                content="Convert the provided research context into the SourceVerifiedNote JSON schema. Do not write any conversational text."
+            ),
+            HumanMessage(
+                content=f"Context to format:\n{research_context}\n\nFinal Output to extract from:\n{response.content}"
+            ),
+        ]
+
+        structured_response = await safe_ainvoke(structured_llm, synthesis_prompt)
+        print(
+            f"Step {current_step_index + 1} summarized with {len(structured_response.sources)} sources."
+        )
 
         messages_to_remove = state["messages"][1:]
         delete_messages = [RemoveMessage(id=m.id) for m in messages_to_remove]
@@ -140,7 +183,7 @@ async def worker_node(state: AgentState, llm, writer_llm=None):
         return {
             "messages": delete_messages,
             "completed_steps": [current_task],
-            "research_notes": [summary],
+            "research_notes": [structured_response],
         }
     else:
         print(f"--- WORKER: LLM requested tools: {response.tool_calls} ---")
